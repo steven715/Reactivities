@@ -1,4 +1,6 @@
+using API.Middleware;
 using Application.Activities;
+using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -26,22 +28,33 @@ namespace API
             {
                 opt.UseSqlite(Configuration.GetConnectionString("DefaultConnection"));
             });
-            services.AddCors(opt => {
-                opt.AddPolicy("CorsPolicy", policy => 
+            services.AddCors(opt =>
+            {
+                opt.AddPolicy("CorsPolicy", policy =>
                 {
                     policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000");
                 });
             });
             services.AddMediatR(typeof(List.Handler).Assembly);
-            services.AddControllers();
+            services.AddControllers()
+            .AddFluentValidation(cfg =>
+            {
+                cfg.RegisterValidatorsFromAssemblyContaining<Create>();
+            });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseMiddleware<ErrorHandlingMiddleware>();
             if (env.IsDevelopment())
             {
-                app.UseDeveloperExceptionPage();
+                // app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+
             }
 
             // app.UseHttpsRedirection();
@@ -51,7 +64,7 @@ namespace API
             app.UseAuthorization();
 
             app.UseCors("CorsPolicy");
-
+            //app.UseMvc();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
